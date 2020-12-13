@@ -1,5 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <objc/runtime.h>
+#import "TVSPreferences.h"
 
 #define ROCKETBOOTSTRAP_LOAD_DYNAMIC
 #import "LightMessaging/LightMessaging.h"
@@ -83,6 +84,14 @@ static void machPortCallback(CFMachPortRef port, void *bytes, CFIndex size, void
 
 %ctor {
 	%init();
+ 
+     NSString *tvs = @"/System/Library/Frameworks/TVServices.framework";
+     NSBundle *b = [NSBundle bundleWithPath:tvs];
+     [b load];
+     [%c(TVSPreferences) addObserverForDomain:@"com.rpetrich.videopace" withDistributedSynchronizationHandler:^(id object) {
+         NSLog(@"[VideoPace] settings changed!");
+         settingsArePrepared = false;
+     }];
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)InvalidateSettings, CFSTR("com.rpetrich.videopace.settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	if (kCFCoreFoundationVersionNumber > 1000 && objc_getClass("SpringBoard")) {
 		kern_return_t err = LMStartService(connection.serverName, CFRunLoopGetCurrent(), machPortCallback);
