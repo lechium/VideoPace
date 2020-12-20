@@ -5,7 +5,7 @@ Architecture: appletvos-arm64
 Version: 1.1.1
 Description: Increase speed of video playback
 Name: VideoPace
-Depends: firmware (>= 4.3), mobilesubstrate (>= 0.9.5000), preferenceloader, applist
+Depends: firmware (>= 4.3), mobilesubstrate (>= 0.9.5000), preferenceloader (>= 1.5-15), applist (>= 1.3-2), com.rpetrich.rocketbootstrap (>= 1.0.2)
 Depiction: http://rpetri.ch/cydia/videopace/
 Icon: file:///System/Library/PreferenceBundles/VideoSettings.bundle/icon.png
 Author: Ryan Petrich

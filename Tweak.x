@@ -22,7 +22,7 @@ static void InvalidateSettings(void)
 static NSDictionary *ReadSettings(void)
 {
 	if (kCFCoreFoundationVersionNumber > 1000) {
-		if (!objc_getClass("SpringBoard")) {
+		if (!objc_getClass("PBApplication")) {
 			LMResponseBuffer buffer;
 			if (LMConnectionSendTwoWay(&connection, 0, NULL, 0, &buffer) == 0) {
 				return LMResponseConsumePropertyList(&buffer);
@@ -46,7 +46,8 @@ static void PrepareSettings(void)
 		id temp = [settings objectForKey:[NSString stringWithFormat:@"VPEnabled-%@", [NSBundle mainBundle].bundleIdentifier]];
 		if (!temp || [temp boolValue]) {
 			temp = [settings objectForKey:@"VPRateFactor"];
-			rateFactor = temp ? [temp floatValue] : 1.3f;
+            //NSLog(@"VPRateFactor: %@", temp);
+			rateFactor = temp ? [temp floatValue] : 1.5f;
 		} else {
 			rateFactor = 1.0f;
 		}
@@ -82,21 +83,38 @@ static void machPortCallback(CFMachPortRef port, void *bytes, CFIndex size, void
 	LMResponseBufferFree(bytes);
 }
 
+%hook TSKPreferencesFacade
+
+- (id)valueForKeyPath:(id)keyPath {
+    %log;
+    id orig = %orig;
+    NSLog(@"= %@", orig);
+    return orig;
+}
+
+- (id)valueForKey:(id)key {
+    %log;
+    id orig = %orig;
+    NSLog(@"= %@", orig);
+    return orig;
+}
+
+%end
+
 %ctor {
 	%init();
- 
      NSString *tvs = @"/System/Library/Frameworks/TVServices.framework";
      NSBundle *b = [NSBundle bundleWithPath:tvs];
      [b load];
      [%c(TVSPreferences) addObserverForDomain:@"com.rpetrich.videopace" withDistributedSynchronizationHandler:^(id object) {
-         NSLog(@"[VideoPace] settings changed!");
+         //NSLog(@"[VideoPace] settings changed!");
          settingsArePrepared = false;
      }];
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (void *)InvalidateSettings, CFSTR("com.rpetrich.videopace.settingschanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	if (kCFCoreFoundationVersionNumber > 1000 && objc_getClass("SpringBoard")) {
+	if (kCFCoreFoundationVersionNumber > 1000 && objc_getClass("PBApplication")) {
 		kern_return_t err = LMStartService(connection.serverName, CFRunLoopGetCurrent(), machPortCallback);
 		if (err) {
-			NSLog(@"VideoPace: Unable to register mach server with error %x", err);
+			NSLog(@"[VideoPace]: Unable to register mach server with error %x", err);
 		}
 	}
 }
